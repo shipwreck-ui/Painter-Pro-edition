@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paint Pro Max - Исправленная версия</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #141e30 0%, #2c3e50 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        .toolbar {
+            background: linear-gradient(135deg, #1a2634 0%, #0f1722 100%);
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            border-bottom: 2px solid #00ffff;
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 15px;
+            border: 1px solid rgba(0,255,255,0.3);
+            flex-wrap: wrap;
+        }
+
+        .tool-btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            border: 1px solid rgba(255,255,255,0.1);
+            min-width: 45px;
+        }
+
+        .tool-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,255,255,0.4);
+            border-color: #00ffff;
+        }
+
+        .tool-btn.active {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
+        }
+
+        .color-picker {
+            width: 60px;
+            height: 60px;
+            border: 3px solid #00ffff;
+            border-radius: 15px;
+            cursor: pointer;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 150px;
+        }
+
+        .slider-container label {
+            color: white;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 10px #00ffff;
+        }
+
+        .main-workspace {
+            display: flex;
+            padding: 20px;
+            gap: 20px;
+            background: #ffffff;
+        }
+
+        .canvas-area {
+            flex: 3;
+            position: relative;
+        }
+
+        #canvas {
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0,255,255,0.3);
+            background: #ffffff;
+            cursor: crosshair;
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .layers-panel {
+            flex: 1;
+            background: rgba(255,255,255,0.9);
+            border-radius: 15px;
+            padding: 15px;
+            border: 1px solid #00ffff;
+            box-shadow: 0 0 20px rgba(0,255,255,0.2);
+            min-width: 280px;
+            max-height: 700px;
+            overflow-y: auto;
+        }
+
+        .layers-header {
+            color: #1a2634;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .layers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .layer-item {
+            background: rgba(0,0,0,0.05);
+            border: 1px solid #3498db;
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #1a2634;
+        }
+
+        .layer-item.active {
+            border-color: #00ffff;
+            background: rgba(0,255,255,0.1);
+            box-shadow: 0 0 20px rgba(0,255,255,0.3);
+        }
+
+        .layer-preview {
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            border: 1px solid #00ffff;
+            background: white;
+        }
+
+        .layer-info {
+            flex: 1;
+        }
+
+        .layer-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .layer-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .layer-btn {
+            background: none;
+            border: none;
+            color: #1a2634;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 3px 6px;
+            border-radius: 3px;
+            transition: all 0.3s;
+        }
+
+        .layer-btn:hover {
+            background: rgba(0,0,0,0.1);
+        }
+
+        .opacity-slider {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #00ffff, #3498db);
+            -webkit-appearance: none;
+        }
+
+        .opacity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #00ffff;
+        }
+
+        .add-layer-btn, .merge-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .add-layer-btn {
+            background: linear-gradient(135deg, #00ff00, #00ffff);
+        }
+
+        .merge-btn {
+            background: linear-gradient(135deg, #ff00ff, #ff6600);
+        }
+
+        .filters-panel {
+            background: linear-gradient(135deg, #f0f0f0, #ffffff);
+            padding: 15px 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            border-top: 1px solid rgba(0,255,255,0.3);
+            border-bottom: 1px solid rgba(0,255,255,0.3);
+        }
+
+        .filter-btn {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(155, 89, 182, 0.5);
+        }
+
+        .neon-btn {
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+            animation: neonPulse 2s infinite;
+        }
+
+        @keyframes neonPulse {
+            0%, 100% { box-shadow: 0 0 20px #00ffff; }
+            50% { box-shadow: 0 0 40px #ff00ff; }
+        }
+
+        .status-bar {
+            background: linear-gradient(135deg, #f0f0f0, #ffffff);
+            padding: 15px 20px;
+            color: #1a2634;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            border-top: 1px solid #00ffff;
+        }
+
+        .coords {
+            background: rgba(0,255,255,0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-family: monospace;
+            border: 1px solid #00ffff;
+            color: #00ffff;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a2634, #0f1722);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 90%;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 50px rgba(0,255,255,0.3);
+        }
+
+        .modal-content h3 {
+            color: white;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .fill-options {
+            background: rgba(0,0,0,0.05);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .fill-options label {
+            color: #1a2634;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .shortcuts {
+            color: #00ffff;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Верхняя панель инструментов -->
+        <div class="toolbar">
+            <div class="tool-group">
+                <button class="tool-btn active" id="brushBtn" title="Кисть (B)">🖌️ Кисть</button>
+                <button class="tool-btn" id="eraserBtn" title="Ластик (E)">🧽 Ластик</button>
+                <button class="tool-btn" id="lineBtn" title="Линия (L)">📏 Линия</button>
+                <button class="tool-btn" id="rectBtn" title="Прямоугольник (R)">⬜ Прямоугольник</button>
+                <button class="tool-btn" id="circleBtn" title="Круг (C)">⭕ Круг</button>
+                <button class="tool-btn" id="fillBtn" title="Заливка (F)">🪣 Заливка</button>
+                <button class="tool-btn" id="sprayBtn" title="Аэрограф (S)">✨ Аэрограф</button>
+                <button class="tool-btn" id="neonBtn" title="Неоновая кисть (N)">💡 Неон</button>
+            </div>
+
+            <div class="tool-group">
+                <input type="color" id="colorPicker" class="color-picker" value="#00ffff">
+                
+                <div class="slider-container">
+                    <label>Размер кисти: <span id="sizeValue">10px</span></label>
+                    <input type="range" id="brushSize" class="slider" min="1" max="100" value="10">
+                </div>
+
+                <div class="slider-container">
+                    <label>Прозрачность: <span id="opacityValue">100%</span></label>
+                    <input type="range" id="opacitySlider" class="slider" min="0" max="100" value="100">
+                </div>
+
+                <div class="slider-container">
+                    <label>Неон: <span id="neonValue">0%</span></label>
+                    <input type="range" id="neonIntensity" class="slider" min="0" max="100" value="0">
+                </div>
+
+                <div class="slider-container">
+                    <label>Допуск заливки: <span id="toleranceValue">30</span></label>
+                    <input type="range" id="fillTolerance" class="slider" min="0" max="100" value="30">
+                </div>
+            </div>
+
+            <div class="tool-group">
+                <button class="tool-btn" id="clearBtn">🗑️ Очистить слой</button>
+                <button class="tool-btn" id="saveBtn">💾 Сохранить</button>
+                <button class="tool-btn" id="loadBtn">📂 Загрузить</button>
+                <button class="tool-btn" id="undoBtn">↩️ Отмена</button>
+                <button class="tool-btn" id="redoBtn">↪️ Повтор</button>
+            </div>
+        </div>
+
+        <!-- Основная рабочая область -->
+        <div class="main-workspace">
+            <!-- Холст -->
+            <div class="canvas-area">
+                <canvas id="canvas" width="1200" height="700"></canvas>
+                <div class="progress-bar" id="fillProgress">
+                    <div class="progress-fill" id="fillProgressFill"></div>
+                </div>
+            </div>
+
+            <!-- Панель слоёв -->
+            <div class="layers-panel">
+                <div class="layers-header">
+                    🌟 СЛОИ 🌟
+                </div>
+                
+                <div class="layers-list" id="layersList">
+                    <!-- Слои добавляются динамически -->
+                </div>
+
+                <button class="add-layer-btn" id="addLayerBtn">
+                    ➕ Добавить слой
+                </button>
+                
+                <button class="merge-btn" id="mergeDownBtn">
+                    ⬇️ Объединить с нижним
+                </button>
+
+                <div class="fill-options">
+                    <label>
+                        <input type="checkbox" id="contiguousFill" checked> 
+                        <span>Только смежные пиксели</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" id="fillTransparent" checked> 
+                        <span>Учитывать прозрачность</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Панель фильтров -->
+        <div class="filters-panel">
+            <button class="filter-btn" id="grayscaleBtn">🌫️ Черно-белое</button>
+            <button class="filter-btn" id="sepiaBtn">🟫 Сепия</button>
+            <button class="filter-btn" id="invertBtn">🔄 Инверсия</button>
+            <button class="filter-btn" id="blurBtn">💧 Размытие</button>
+            <button class="filter-btn" id="sharpBtn">⚡ Резкость</button>
+            <button class="filter-btn" id="brightnessBtn">☀️ Яркость +50%</button>
+            <button class="filter-btn" id="contrastBtn">🌓 Контраст</button>
+            <button class="filter-btn neon-btn" id="neonFilterBtn">🌈 Неон-фильтр</button>
+            <button class="filter-btn" id="resetFiltersBtn">🔄 Сбросить фильтры</button>
+        </div>
+
+        <!-- Нижняя панель -->
+        <div class="status-bar">
+            <div class="coords" id="coordinates">X: 0, Y: 0</div>
+            <div id="drawingStatus">🎨 Инструмент: Кисть | Размер: 10px | Неон: 0%</div>
+            <div id="fillStatus"></div>
+            <div class="shortcuts">
+                <span>B-Кисть | E-Ластик | F-Заливка | S-Аэрограф | N-Неон | Ctrl+Z-Отмена | Ctrl+Y-Повтор</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для загрузки -->
+    <div class="modal" id="loadModal">
+        <div class="modal-content">
+            <h3>✨ Загрузить изображение ✨</h3>
+            <input type="file" id="imageInput" accept="image/*">
+            <button class="tool-btn" id="uploadBtn" style="width:100%; margin:10px 0;">Загрузить на слой</button>
+            <button class="tool-btn" id="closeModalBtn" style="width:100%;">Закрыть</button>
+        </div>
+    </div>
+
+    <script>
+        // ========== ИНИЦИАЛИЗАЦИЯ ==========
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        // ========== СИСТЕМА СЛОЁВ ==========
+        class Layer {
+            constructor(id, name) {
+                this.id = id;
+                this.name = name;
+                this.visible = true;
+                this.locked = false;
+                this.opacity = 1;
+                this.canvas = document.createElement('canvas');
+                this.canvas.width = canvas.width;
+                this.canvas.height = canvas.height;
+                this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+                this.clear();
+            }
+
+            clear() {
+                this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // Простой белый фон
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        // Массив слоёв
+        let layers = [];
+        let activeLayerIndex = 0;
+        let nextLayerId = 1;
+
+        // Создаём первый слой
+        function initLayers() {
+            const layer = new Layer(0, 'Слой 1');
+            layers.push(layer);
+            renderLayersList();
+            renderCompositeImage();
+        }
+
+        // Добавить слой
+        function addLayer() {
+            const layer = new Layer(nextLayerId++, `Слой ${layers.length + 1}`);
+            layers.push(layer);
+            activeLayerIndex = layers.length - 1;
+            renderLayersList();
+            renderCompositeImage();
+            updateStatus();
+        }
+
+        // Удалить слой
+        function deleteLayer(index) {
+            if (layers.length <= 1) {
+                alert('Нельзя удалить последний слой!');
+                return;
+            }
+            layers.splice(index, 1);
+            if (activeLayerIndex >= layers.length) {
+                activeLayerIndex = layers.length - 1;
+            }
+            renderLayersList();
+            renderCompositeImage();
+        }
+
+        // Переключить видимость
+        function toggleLayerVisibility(index) {
+            layers[index].visible = !layers[index].visible;
+            renderLayersList();
+            renderCompositeImage();
+        }
+
+        // Переключить блокировку
+        function toggleLayerLock(index) {
+            layers[index].locked = !layers[index].locked;
+            renderLayersList();
+        }
+
+        // Установить прозрачность
+        function setLayerOpacity(index, opacity) {
+            layers[index].opacity = opacity / 100;
+            renderCompositeImage();
+        }
+
+        // Объединить слои
+        function mergeDown() {
+            if (activeLayerIndex === 0) {
+                alert('Это самый нижний слой!');
+                return;
+            }
+            
+            const bottomLayer = layers[activeLayerIndex - 1];
+            const topLayer = layers[activeLayerIndex];
+            
+            bottomLayer.ctx.globalAlpha = topLayer.opacity;
+            bottomLayer.ctx.drawImage(topLayer.canvas, 0, 0);
+            bottomLayer.ctx.globalAlpha = 1;
+            
+            layers.splice(activeLayerIndex, 1);
+            activeLayerIndex--;
+            
+            renderLayersList();
+            renderCompositeImage();
+        }
+
+        // Рендер композита
+        function renderCompositeImage() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Простой белый фон
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            for (let i = 0; i < layers.length; i++) {
+                const layer = layers[i];
+                if (layer.visible) {
+                    ctx.globalAlpha = layer.opacity;
+                    ctx.drawImage(layer.canvas, 0, 0);
+                }
+            }
+            
+            ctx.globalAlpha = 1;
+        }
+
+        // Отрисовка списка слоёв
+        function renderLayersList() {
+            const layersList = document.getElementById('layersList');
+            layersList.innerHTML = '';
+            
+            for (let i = layers.length - 1; i >= 0; i--) {
+                const layer = layers[i];
+                const div = document.createElement('div');
+                div.className = `layer-item ${i === activeLayerIndex ? 'active' : ''}`;
+                
+                // Превью
+                const previewCanvas = document.createElement('canvas');
+                previewCanvas.className = 'layer-preview';
+                previewCanvas.width = 50;
+                previewCanvas.height = 50;
+                const previewCtx = previewCanvas.getContext('2d');
+                previewCtx.fillStyle = '#ffffff';
+                previewCtx.fillRect(0, 0, 50, 50);
+                previewCtx.drawImage(layer.canvas, 0, 0, 50, 50);
+                
+                div.innerHTML = `
+                    <div class="layer-preview-container">
+                        ${previewCanvas.outerHTML}
+                    </div>
+                    <div class="layer-info">
+                        <div class="layer-name">${layer.name}</div>
+                        <div class="layer-controls">
+                            <button class="layer-btn" data-action="vis" data-index="${i}">${layer.visible ? '👁️' : '🚫'}</button>
+                            <button class="layer-btn" data-action="lock" data-index="${i}">${layer.locked ? '🔒' : '🔓'}</button>
+                            <button class="layer-btn" data-action="del" data-index="${i}">🗑️</button>
+                        </div>
+                        <input type="range" class="opacity-slider" data-action="opacity" data-index="${i}"
+                               min="0" max="100" value="${layer.opacity * 100}" ${layer.locked ? 'disabled' : ''}>
+                    </div>
+                `;
+                
+                div.addEventListener('click', (e) => {
+                    if (!e.target.closest('button') && !e.target.closest('input')) {
+                        activeLayerIndex = i;
+                        renderLayersList();
+                        updateStatus();
+                    }
+                });
+                
+                layersList.appendChild(div);
+            }
+            
+            // Обработчики
+            document.querySelectorAll('[data-action="vis"]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleLayerVisibility(parseInt(btn.dataset.index));
+                });
+            });
+            
+            document.querySelectorAll('[data-action="lock"]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleLayerLock(parseInt(btn.dataset.index));
+                });
+            });
+            
+            document.querySelectorAll('[data-action="del"]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteLayer(parseInt(btn.dataset.index));
+                });
+            });
+            
+            document.querySelectorAll('[data-action="opacity"]').forEach(slider => {
+                slider.addEventListener('input', (e) => {
+                    e.stopPropagation();
+                    setLayerOpacity(parseInt(slider.dataset.index), slider.value);
+                });
+            });
+        }
+
+        function getActiveLayer() {
+            return layers[activeLayerIndex];
+        }
+
+        // ========== ИСПРАВЛЕННАЯ ИСТОРИЯ ==========
+        let history = [];
+        let historyIndex = -1;
+        let isRestoring = false;
+
+        // Сохранение состояния всех слоёв
+        function saveState() {
+            if (isRestoring) return;
+            
+            // Сохраняем каждый слой
+            const layersData = layers.map(layer => {
+                return {
+                    id: layer.id,
+                    name: layer.name,
+                    visible: layer.visible,
+                    locked: layer.locked,
+                    opacity: layer.opacity,
+                    imageData: layer.canvas.toDataURL()
+                };
+            });
+            
+            // Удаляем будущие состояния если мы не в конце истории
+            if (historyIndex < history.length - 1) {
+                history = history.slice(0, historyIndex + 1);
+            }
+            
+            history.push(layersData);
+            historyIndex = history.length - 1;
+            
+            // Ограничиваем историю 50 шагами
+            if (history.length > 50) {
+                history.shift();
+                historyIndex--;
+            }
+        }
+
+        // Восстановление состояния
+        async function restoreState(index) {
+            if (index < 0 || index >= history.length) return;
+            
+            isRestoring = true;
+            
+            const layersData = history[index];
+            
+            // Очищаем текущие слои
+            layers = [];
+            
+            // Восстанавливаем слои из истории
+            for (const data of layersData) {
+                const layer = new Layer(data.id, data.name);
+                layer.visible = data.visible;
+                layer.locked = data.locked;
+                layer.opacity = data.opacity;
+                
+                // Загружаем изображение слоя
+                await new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        layer.ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        layer.ctx.drawImage(img, 0, 0);
+                        resolve();
+                    };
+                    img.src = data.imageData;
+                });
+                
+                layers.push(layer);
+            }
+            
+            // Обновляем активный слой
+            activeLayerIndex = Math.min(activeLayerIndex, layers.length - 1);
+            
+            renderLayersList();
+            renderCompositeImage();
+            updateStatus();
+            
+            isRestoring = false;
+        }
+
+        // Отмена
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                restoreState(historyIndex);
+            }
+        }
+
+        // Повтор
+        function redo() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                restoreState(historyIndex);
+            }
+        }
+
+        // ========== ЗАЛИВКА ==========
+        let isFilling = false;
+
+        function hexToRgba(hex, alpha = 1) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16),
+                a: Math.round(alpha * 255)
+            } : { r: 0, g: 255, b: 255, a: 255 };
+        }
+
+        function getPixelColor(data, idx) {
+            return {
+                r: data[idx],
+                g: data[idx + 1],
+                b: data[idx + 2],
+                a: data[idx + 3]
+            };
+        }
+
+        function colorsMatch(c1, c2, tolerance, ignoreAlpha = false) {
+            const dr = c1.r - c2.r;
+            const dg = c1.g - c2.g;
+            const db = c1.b - c2.b;
+            const da = ignoreAlpha ? 0 : (c1.a - c2.a);
+            
+            const dist = dr*dr + dg*dg + db*db + da*da;
+            return dist <= tolerance * tolerance;
+        }
+
+        async function floodFill(startX, startY, fillColor, fillAlpha, tolerance, contiguous = true, useTransparency = true) {
+            const layer = getActiveLayer();
+            if (layer.locked || isFilling) return;
+            
+            isFilling = true;
+            document.getElementById('fillStatus').textContent = '⏳ Заливка...';
+            document.getElementById('fillProgress').style.display = 'block';
+            
+            const layerCtx = layer.ctx;
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            const imageData = layerCtx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+            
+            startX = Math.max(0, Math.min(width - 1, Math.floor(startX)));
+            startY = Math.max(0, Math.min(height - 1, Math.floor(startY)));
+            
+            const startIdx = (startY * width + startX) * 4;
+            const startColor = getPixelColor(data, startIdx);
+            
+            const fillRgba = hexToRgba(fillColor, fillAlpha);
+            
+            if (colorsMatch(startColor, fillRgba, tolerance, !useTransparency)) {
+                isFilling = false;
+                document.getElementById('fillStatus').textContent = '✅ Цвета совпадают';
+                document.getElementById('fillProgress').style.display = 'none';
+                return;
+            }
+            
+            if (!contiguous) {
+                for (let i = 0; i < data.length; i += 4) {
+                    data[i] = fillRgba.r;
+                    data[i + 1] = fillRgba.g;
+                    data[i + 2] = fillRgba.b;
+                    data[i + 3] = fillRgba.a;
+                }
+                layerCtx.putImageData(imageData, 0, 0);
+                renderCompositeImage();
+                saveState();
+                
+                isFilling = false;
+                document.getElementById('fillStatus').textContent = '✅ Готово';
+                document.getElementById('fillProgress').style.display = 'none';
+                return;
+            }
+            
+            const stack = [{x: startX, y: startY}];
+            const visited = new Uint8Array(width * height);
+            const pixelsToFill = [];
+            
+            let processed = 0;
+            const totalEstimate = width * height;
+            
+            while (stack.length > 0) {
+                const {x, y} = stack.pop();
+                
+                if (x < 0 || x >= width || y < 0 || y >= height) continue;
+                
+                const idx = y * width + x;
+                if (visited[idx]) continue;
+                
+                const pos = idx * 4;
+                const currentColor = getPixelColor(data, pos);
+                
+                if (colorsMatch(currentColor, startColor, tolerance, !useTransparency)) {
+                    visited[idx] = 1;
+                    pixelsToFill.push(idx);
+                    
+                    stack.push({x: x + 1, y});
+                    stack.push({x: x - 1, y});
+                    stack.push({x, y: y + 1});
+                    stack.push({x, y: y - 1});
+                }
+                
+                processed++;
+                if (processed % 1000 === 0) {
+                    document.getElementById('fillProgressFill').style.width = 
+                        Math.min((processed / totalEstimate) * 50, 50) + '%';
+                    
+                    if (processed % 5000 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 0));
+                    }
+                }
+            }
+            
+            const chunkSize = 1000;
+            for (let i = 0; i < pixelsToFill.length; i += chunkSize) {
+                const end = Math.min(i + chunkSize, pixelsToFill.length);
+                
+                for (let j = i; j < end; j++) {
+                    const idx = pixelsToFill[j];
+                    const pos = idx * 4;
+                    data[pos] = fillRgba.r;
+                    data[pos + 1] = fillRgba.g;
+                    data[pos + 2] = fillRgba.b;
+                    data[pos + 3] = fillRgba.a;
+                }
+                
+                const progress = 50 + (i / pixelsToFill.length) * 50;
+                document.getElementById('fillProgressFill').style.width = progress + '%';
+                
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+            
+            layerCtx.putImageData(imageData, 0, 0);
+            renderCompositeImage();
+            saveState();
+            
+            isFilling = false;
+            document.getElementById('fillStatus').textContent = '✅ Готово';
+            document.getElementById('fillProgress').style.display = 'none';
+            document.getElementById('fillProgressFill').style.width = '0%';
+        }
+
+        // ========== СОСТОЯНИЕ РИСОВАНИЯ ==========
+        let isDrawing = false;
+        let lastX = 0, lastY = 0;
+        let startX = 0, startY = 0;
+        let currentTool = 'brush';
+        let currentColor = '#00ffff';
+        let brushSize = 10;
+        let opacity = 1;
+        let neonIntensity = 0;
+        let fillTolerance = 30;
+        
+        initLayers();
+        saveState();
+
+        // Элементы управления
+        const brushBtn = document.getElementById('brushBtn');
+        const eraserBtn = document.getElementById('eraserBtn');
+        const lineBtn = document.getElementById('lineBtn');
+        const rectBtn = document.getElementById('rectBtn');
+        const circleBtn = document.getElementById('circleBtn');
+        const fillBtn = document.getElementById('fillBtn');
+        const sprayBtn = document.getElementById('sprayBtn');
+        const neonBtn = document.getElementById('neonBtn');
+        const colorPicker = document.getElementById('colorPicker');
+        const brushSizeSlider = document.getElementById('brushSize');
+        const opacitySlider = document.getElementById('opacitySlider');
+        const neonIntensitySlider = document.getElementById('neonIntensity');
+        const fillToleranceSlider = document.getElementById('fillTolerance');
+        const sizeValue = document.getElementById('sizeValue');
+        const opacityValue = document.getElementById('opacityValue');
+        const neonValue = document.getElementById('neonValue');
+        const toleranceValue = document.getElementById('toleranceValue');
+        const clearBtn = document.getElementById('clearBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const loadBtn = document.getElementById('loadBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
+        const addLayerBtn = document.getElementById('addLayerBtn');
+        const mergeDownBtn = document.getElementById('mergeDownBtn');
+        const contiguousFill = document.getElementById('contiguousFill');
+        const fillTransparent = document.getElementById('fillTransparent');
+        
+        // Фильтры
+        const grayscaleBtn = document.getElementById('grayscaleBtn');
+        const sepiaBtn = document.getElementById('sepiaBtn');
+        const invertBtn = document.getElementById('invertBtn');
+        const blurBtn = document.getElementById('blurBtn');
+        const sharpBtn = document.getElementById('sharpBtn');
+        const brightnessBtn = document.getElementById('brightnessBtn');
+        const contrastBtn = document.getElementById('contrastBtn');
+        const neonFilterBtn = document.getElementById('neonFilterBtn');
+        const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+        
+        // Модальное окно
+        const modal = document.getElementById('loadModal');
+        const imageInput = document.getElementById('imageInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        
+        // Статус
+        const coordinates = document.getElementById('coordinates');
+        const drawingStatus = document.getElementById('drawingStatus');
+        const fillStatus = document.getElementById('fillStatus');
+
+        function updateStatus() {
+            const layer = getActiveLayer();
+            let toolName = {
+                'brush': 'Кисть',
+                'eraser': 'Ластик',
+                'line': 'Линия',
+                'rect': 'Прямоугольник',
+                'circle': 'Круг',
+                'fill': 'Заливка',
+                'spray': 'Аэрограф',
+                'neon': 'Неоновая кисть'
+            }[currentTool];
+            
+            drawingStatus.textContent = `🎨 ${layer.name}: ${toolName} | Размер: ${brushSize}px | Неон: ${neonIntensity}% | Прозрачность: ${Math.round(opacity * 100)}%`;
+        }
+
+        // Переключение инструментов
+        function setActiveTool(tool) {
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            currentTool = tool;
+            document.getElementById(tool + 'Btn').classList.add('active');
+            updateStatus();
+        }
+
+        brushBtn.addEventListener('click', () => setActiveTool('brush'));
+        eraserBtn.addEventListener('click', () => setActiveTool('eraser'));
+        lineBtn.addEventListener('click', () => setActiveTool('line'));
+        rectBtn.addEventListener('click', () => setActiveTool('rect'));
+        circleBtn.addEventListener('click', () => setActiveTool('circle'));
+        fillBtn.addEventListener('click', () => setActiveTool('fill'));
+        sprayBtn.addEventListener('click', () => setActiveTool('spray'));
+        neonBtn.addEventListener('click', () => setActiveTool('neon'));
+
+        // Обновление значений
+        colorPicker.addEventListener('input', (e) => {
+            currentColor = e.target.value;
+        });
+
+        brushSizeSlider.addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            sizeValue.textContent = brushSize + 'px';
+            updateStatus();
+        });
+
+        opacitySlider.addEventListener('input', (e) => {
+            opacity = parseInt(e.target.value) / 100;
+            opacityValue.textContent = (opacity * 100) + '%';
+            updateStatus();
+        });
+
+        neonIntensitySlider.addEventListener('input', (e) => {
+            neonIntensity = parseInt(e.target.value);
+            neonValue.textContent = neonIntensity + '%';
+            updateStatus();
+        });
+
+        fillToleranceSlider.addEventListener('input', (e) => {
+            fillTolerance = parseInt(e.target.value);
+            toleranceValue.textContent = fillTolerance;
+        });
+
+        // Слои
+        addLayerBtn.addEventListener('click', addLayer);
+        mergeDownBtn.addEventListener('click', mergeDown);
+
+        // Очистка
+        clearBtn.addEventListener('click', () => {
+            if (!getActiveLayer().locked) {
+                getActiveLayer().clear();
+                renderCompositeImage();
+                saveState();
+            }
+        });
+
+        // Отмена/повтор
+        undoBtn.addEventListener('click', undo);
+        redoBtn.addEventListener('click', redo);
+
+        // Горячие клавиши
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            } else if (e.ctrlKey && e.key === 'y') {
+                e.preventDefault();
+                redo();
+            } else {
+                const key = e.key.toLowerCase();
+                const tools = {
+                    'b': 'brush', 'e': 'eraser', 'l': 'line', 
+                    'r': 'rect', 'c': 'circle', 'f': 'fill',
+                    's': 'spray', 'n': 'neon'
+                };
+                if (tools[key]) {
+                    setActiveTool(tools[key]);
+                }
+            }
+        });
+
+        // Рисование
+        canvas.addEventListener('mousedown', (e) => {
+            const layer = getActiveLayer();
+            if (layer.locked) {
+                alert('Слой заблокирован!');
+                return;
+            }
+            
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            
+            if (currentTool === 'fill') {
+                floodFill(x, y, currentColor, opacity, fillTolerance, contiguousFill.checked, fillTransparent.checked);
+                return;
+            }
+            
+            isDrawing = true;
+            lastX = x;
+            lastY = y;
+            startX = x;
+            startY = y;
+            
+            const layerCtx = layer.ctx;
+            layerCtx.beginPath();
+            layerCtx.moveTo(x, y);
+            
+            if (currentTool === 'brush' || currentTool === 'eraser' || currentTool === 'neon') {
+                drawPoint(x, y);
+            } else if (currentTool === 'spray') {
+                spray(x, y);
+            }
+        });
+
+        function drawPoint(x, y) {
+            const layer = getActiveLayer();
+            const layerCtx = layer.ctx;
+            
+            layerCtx.save();
+            layerCtx.globalAlpha = opacity;
+            
+            if (currentTool === 'eraser') {
+                layerCtx.fillStyle = '#ffffff';
+            } else {
+                layerCtx.fillStyle = currentColor;
+            }
+            
+            if (currentTool === 'neon' || neonIntensity > 0) {
+                layerCtx.shadowColor = currentColor;
+                layerCtx.shadowBlur = neonIntensity / 2;
+            }
+            
+            layerCtx.beginPath();
+            layerCtx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+            layerCtx.fill();
+            
+            layerCtx.restore();
+            
+            renderCompositeImage();
+        }
+
+        function spray(x, y) {
+            const layer = getActiveLayer();
+            const layerCtx = layer.ctx;
+            
+            for (let i = 0; i < 20; i++) {
+                const offsetX = (Math.random() - 0.5) * brushSize;
+                const offsetY = (Math.random() - 0.5) * brushSize;
+                const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+                
+                if (distance < brushSize / 2) {
+                    layerCtx.save();
+                    layerCtx.globalAlpha = opacity * Math.random();
+                    
+                    if (currentTool === 'eraser') {
+                        layerCtx.fillStyle = '#ffffff';
+                    } else {
+                        layerCtx.fillStyle = currentColor;
+                    }
+                    
+                    if (neonIntensity > 0) {
+                        layerCtx.shadowColor = currentColor;
+                        layerCtx.shadowBlur = neonIntensity / 2;
+                    }
+                    
+                    layerCtx.beginPath();
+                    layerCtx.arc(x + offsetX, y + offsetY, brushSize / 4, 0, Math.PI * 2);
+                    layerCtx.fill();
+                    
+                    layerCtx.restore();
+                }
+            }
+            
+            renderCompositeImage();
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            
+            coordinates.textContent = `X: ${Math.round(x)}, Y: ${Math.round(y)}`;
+            
+            if (!isDrawing) return;
+            
+            const layer = getActiveLayer();
+            const layerCtx = layer.ctx;
+            
+            if (currentTool === 'brush' || currentTool === 'eraser' || currentTool === 'neon') {
+                layerCtx.save();
+                layerCtx.globalAlpha = opacity;
+                
+                if (currentTool === 'eraser') {
+                    layerCtx.strokeStyle = '#ffffff';
+                } else {
+                    layerCtx.strokeStyle = currentColor;
+                }
+                
+                layerCtx.lineWidth = brushSize;
+                layerCtx.lineCap = 'round';
+                layerCtx.lineJoin = 'round';
+                
+                if (currentTool === 'neon' || neonIntensity > 0) {
+                    layerCtx.shadowColor = currentColor;
+                    layerCtx.shadowBlur = neonIntensity / 2;
+                }
+                
+                layerCtx.lineTo(x, y);
+                layerCtx.stroke();
+                layerCtx.beginPath();
+                layerCtx.moveTo(x, y);
+                
+                layerCtx.restore();
+                
+                renderCompositeImage();
+            } else if (currentTool === 'spray') {
+                spray(x, y);
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (!isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            
+            const layer = getActiveLayer();
+            const layerCtx = layer.ctx;
+            
+            layerCtx.save();
+            layerCtx.globalAlpha = opacity;
+            layerCtx.strokeStyle = currentColor;
+            layerCtx.lineWidth = brushSize;
+            
+            if (neonIntensity > 0) {
+                layerCtx.shadowColor = currentColor;
+                layerCtx.shadowBlur = neonIntensity / 2;
+            }
+            
+            if (currentTool === 'line') {
+                layerCtx.beginPath();
+                layerCtx.moveTo(startX, startY);
+                layerCtx.lineTo(x, y);
+                layerCtx.stroke();
+            } else if (currentTool === 'rect') {
+                layerCtx.strokeRect(startX, startY, x - startX, y - startY);
+            } else if (currentTool === 'circle') {
+                layerCtx.beginPath();
+                const radius = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
+                layerCtx.arc(startX, startY, radius, 0, Math.PI * 2);
+                layerCtx.stroke();
+            }
+            
+            layerCtx.restore();
+            renderCompositeImage();
+            saveState();
+            isDrawing = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                saveState();
+            }
+        });
+
+        // Сохранение файла
+        saveBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'paint-pro-' + Date.now() + '.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Загрузка файла
+        loadBtn.addEventListener('click', () => {
+            modal.style.display = 'flex';
+            imageInput.value = '';
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+            imageInput.value = '';
+        });
+
+        uploadBtn.addEventListener('click', () => {
+            const file = imageInput.files[0];
+            if (!file) {
+                alert('Выберите файл!');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const layer = getActiveLayer();
+                    if (!layer.locked) {
+                        layer.ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        renderCompositeImage();
+                        saveState();
+                        modal.style.display = 'none';
+                        imageInput.value = '';
+                    } else {
+                        alert('Слой заблокирован!');
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Закрытие модального окна
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+                imageInput.value = '';
+            }
+        });
+
+        // Фильтры
+        function applyFilter(filterName) {
+            const layer = getActiveLayer();
+            if (layer.locked) {
+                alert('Слой заблокирован!');
+                return;
+            }
+            
+            const layerCtx = layer.ctx;
+            const imageData = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                
+                switch(filterName) {
+                    case 'grayscale':
+                        const gray = 0.3 * r + 0.59 * g + 0.11 * b;
+                        data[i] = data[i + 1] = data[i + 2] = gray;
+                        break;
+                        
+                    case 'sepia':
+                        data[i] = Math.min(255, (r * 0.393) + (g * 0.769) + (b * 0.189));
+                        data[i + 1] = Math.min(255, (r * 0.349) + (g * 0.686) + (b * 0.168));
+                        data[i + 2] = Math.min(255, (r * 0.272) + (g * 0.534) + (b * 0.131));
+                        break;
+                        
+                    case 'invert':
+                        data[i] = 255 - r;
+                        data[i + 1] = 255 - g;
+                        data[i + 2] = 255 - b;
+                        break;
+                        
+                    case 'brightness':
+                        data[i] = Math.min(255, r * 1.5);
+                        data[i + 1] = Math.min(255, g * 1.5);
+                        data[i + 2] = Math.min(255, b * 1.5);
+                        break;
+                        
+                    case 'contrast':
+                        const factor = 1.5;
+                        data[i] = Math.min(255, Math.max(0, ((r - 128) * factor) + 128));
+                        data[i + 1] = Math.min(255, Math.max(0, ((g - 128) * factor) + 128));
+                        data[i + 2] = Math.min(255, Math.max(0, ((b - 128) * factor) + 128));
+                        break;
+                        
+                    case 'neon':
+                        data[i] = Math.min(255, r * 1.8);
+                        data[i + 1] = Math.min(255, g * 0.5);
+                        data[i + 2] = Math.min(255, b * 1.8);
+                        break;
+                }
+            }
+            
+            layerCtx.putImageData(imageData, 0, 0);
+            renderCompositeImage();
+            saveState();
+        }
+
+        grayscaleBtn.addEventListener('click', () => applyFilter('grayscale'));
+        sepiaBtn.addEventListener('click', () => applyFilter('sepia'));
+        invertBtn.addEventListener('click', () => applyFilter('invert'));
+        brightnessBtn.addEventListener('click', () => applyFilter('brightness'));
+        contrastBtn.addEventListener('click', () => applyFilter('contrast'));
+        neonFilterBtn.addEventListener('click', () => applyFilter('neon'));
+
+        // Размытие
+        blurBtn.addEventListener('click', () => {
+            const layer = getActiveLayer();
+            if (layer.locked) return;
+            
+            const layerCtx = layer.ctx;
+            const imageData = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            const tempData = new Uint8ClampedArray(data);
+            
+            for (let y = 1; y < canvas.height - 1; y++) {
+                for (let x = 1; x < canvas.width - 1; x++) {
+                    const i = (y * canvas.width + x) * 4;
+                    
+                    for (let c = 0; c < 3; c++) {
+                        let sum = 0;
+                        for (let dy = -1; dy <= 1; dy++) {
+                            for (let dx = -1; dx <= 1; dx++) {
+                                const ni = ((y + dy) * canvas.width + (x + dx)) * 4 + c;
+                                sum += tempData[ni];
+                            }
+                        }
+                        data[i + c] = Math.round(sum / 9);
+                    }
+                }
+            }
+            
+            layerCtx.putImageData(imageData, 0, 0);
+            renderCompositeImage();
+            saveState();
+        });
+
+        // Резкость
+        sharpBtn.addEventListener('click', () => {
+            const layer = getActiveLayer();
+            if (layer.locked) return;
+            
+            const layerCtx = layer.ctx;
+            const imageData = layerCtx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            const tempData = new Uint8ClampedArray(data);
+            
+            const kernel = [
+                [0, -1, 0],
+                [-1, 5, -1],
+                [0, -1, 0]
+            ];
+            
+            for (let y = 1; y < canvas.height - 1; y++) {
+                for (let x = 1; x < canvas.width - 1; x++) {
+                    const i = (y * canvas.width + x) * 4;
+                    
+                    for (let c = 0; c < 3; c++) {
+                        let sum = 0;
+                        for (let ky = 0; ky < 3; ky++) {
+                            for (let kx = 0; kx < 3; kx++) {
+                                const ny = y + ky - 1;
+                                const nx = x + kx - 1;
+                                const ni = (ny * canvas.width + nx) * 4 + c;
+                                sum += tempData[ni] * kernel[ky][kx];
+                            }
+                        }
+                        data[i + c] = Math.min(255, Math.max(0, sum));
+                    }
+                }
+            }
+            
+            layerCtx.putImageData(imageData, 0, 0);
+            renderCompositeImage();
+            saveState();
+        });
+
+        // Сброс фильтров
+        resetFiltersBtn.addEventListener('click', () => {
+            if (historyIndex >= 0) {
+                restoreState(historyIndex);
+            }
+        });
+
+        // Инициализация
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        updateStatus();
+    </script>
+</body>
+</html>
