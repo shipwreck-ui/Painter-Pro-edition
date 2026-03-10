@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Painter Pro — Графический редактор</title>
+    <style>
+        /* ===== БАЗОВЫЕ СТИЛИ ОТОБРАЖЕНИЯ (всегда работают) ===== */
+        .sidebar-left {
+            display: block !important;
+        }
+
+        .sidebar-right {
+            display: block !important;
+        }
+
+        /* Адаптация для разных экранов */
+        @media (min-width: 1441px) {
+            .sidebar-left, .sidebar-right {
+                display: block !important;
+            }
+        }
+
+        @media (min-width: 1025px) and (max-width: 1440px) {
+            .sidebar-left, .sidebar-right {
+                display: block !important;
+            }
+            .sidebar-left { width: 260px; }
+            .sidebar-right { width: 240px; }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .sidebar-left { display: none; }
+            .sidebar-right { display: block; width: 220px; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-left, .sidebar-right {
+                display: none !important;
+            }
+            
+            .mobile-menu {
+                display: block !important;
+            }
+        }
+
+        /* Кнопка открытия меню */
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            left: 10px;
+            top: 70px;
+            z-index: 1000;
+            background: var(--accent);
+            color: white;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar-toggle {
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        /* Мобильное меню */
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .mobile-menu-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(203, 166, 247, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== СБРОС И ПЕРЕМЕННЫЕ ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+
+        :root {
+            /* Основные цвета */
+            --bg-primary: #1e1e2e;
+            --bg-secondary: #2a2a3a;
+            --bg-tertiary: #313244;
+            --accent: #cba6f7;
+            --accent-hover: #b4befe;
+            --text-primary: #ffffff;
+            --text-secondary: #a6adc8;
+            --border: #45475a;
+            
+            /* Адаптивные размеры */
+            --tool-size: 48px;
+            --panel-padding: 16px;
+            --border-radius: 16px;
+        }
+
+        /* ===== АДАПТАЦИЯ ПОД УСТРОЙСТВА ===== */
+        @media (max-width: 768px) {
+            :root {
+                --tool-size: 44px;
+                --panel-padding: 12px;
+                --border-radius: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            :root {
+                --tool-size: 40px;
+                --panel-padding: 8px;
+                --border-radius: 10px;
+            }
+        }
+
+        body {
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+        }
+
+        /* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
+        .app-container {
+            width: 100%;
+            max-width: 1600px;
+            height: 95vh;
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+        }
+
+        /* ===== ВЕРХНЯЯ ПАНЕЛЬ ===== */
+        .top-bar {
+            background: var(--bg-tertiary);
+            padding: 12px var(--panel-padding);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-icon {
+            font-size: 24px;
+            filter: drop-shadow(0 2px 4px rgba(203, 166, 247, 0.3));
+        }
+
+        .logo-text {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: clamp(16px, 2vw, 20px);
+        }
+
+        .logo-text span {
+            color: var(--accent);
+            margin-left: 4px;
+            font-weight: 300;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: var(--accent);
+            color: var(--bg-primary);
+            border-color: var(--accent);
+        }
+
+        /* ===== ОСНОВНОЙ ЛЭЙАУТ ===== */
+        .main-layout {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ===== ЛЕВАЯ ПАНЕЛЬ (ИНСТРУМЕНТЫ) ===== */
+        .sidebar-left {
+            width: 280px;
+            background: var(--bg-tertiary);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: var(--panel-padding);
+            transition: transform 0.3s ease;
+        }
+
+        /* Адаптация для планшетов */
+        @media (max-width: 900px) {
+            .sidebar-left {
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 10;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+            }
+
+            .sidebar-left.active {
+                transform: translateX(0);
+            }
+
+            .sidebar-toggle {
+                display: block !important;
+                position: absolute;
+                left: 12px;
+                top: 12px;
+                z-index: 20;
+                background: var(--accent);
+                color: var(--bg-primary);
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: none;
+                cursor: pointer;
+                font-size: 20px;
+            }
+        }
+
+        .sidebar-toggle {
+            display: none;
+        }
+
+        .tools-section {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .tool-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+
+        .tool-item:hover {
+            background: var(--accent);
+            color: var(--bg-primary);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .tool-item.active {
+            background: var(--accent);
+            color: var(--bg-primary);
+            border-color: var(--accent);
+        }
+
+        .tool-icon {
+            font-size: 20px;
+        }
+
+        /* ===== ЦЕНТРАЛЬНАЯ ОБЛАСТЬ ===== */
+        .canvas-wrapper {
+            flex: 1;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .canvas-header {
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        .canvas-title {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .canvas-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: auto;
+            background: #1a1a26;
+            background-image: 
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        #canvas {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            cursor: crosshair;
+            max-width: 100%;
+            height: auto;
+            width: 800px;
+            height: 500px;
+            object-fit: contain;
+        }
+
+        /* ===== ПРАВАЯ ПАНЕЛЬ ===== */
+        .sidebar-right {
+            width: 260px;
+            background: var(--bg-tertiary);
+            border-left: 1px solid var(--border);
+            padding: var(--panel-padding);
+            overflow-y: auto;
+        }
+
+        @media (max-width: 700px) {
+            .sidebar-right {
+                display: none;
+                position: absolute;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 10;
+                width: 240px;
+            }
+
+            .sidebar-right.active {
+                display: block;
+            }
+        }
+
+        .property-group {
+            margin-bottom: 24px;
+        }
+
+        .property-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .color-preview {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 8px;
+            border: 1px solid var(--border);
+        }
+
+        #colorPicker {
+            width: 100%;
+            height: 40px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .size-control {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid var(--border);
+        }
+
+        #brushSize {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-tertiary);
+            -webkit-appearance: none;
+        }
+
+        #brushSize::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .size-value {
+            text-align: center;
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 8px;
+            background: var(--bg-tertiary);
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .info-panel {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 13px;
+            padding: 4px 0;
+        }
+
+        /* ===== НИЖНЯЯ ПАНЕЛЬ ===== */
+        .bottom-bar {
+            background: var(--bg-tertiary);
+            padding: 8px var(--panel-padding);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .device-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .device-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #a6e3a1;
+            box-shadow: 0 0 10px #a6e3a1;
+        }
+
+        .status-message {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ===== МОБИЛЬНОЕ МЕНЮ ===== */
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        @media (max-width: 700px) {
+            .mobile-menu {
+                display: block;
+            }
+
+            .mobile-menu-btn {
+                width: 56px;
+                height: 56px;
+                border-radius: 50%;
+                background: var(--accent);
+                color: var(--bg-primary);
+                border: none;
+                font-size: 24px;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(203, 166, 247, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        /* ===== АНИМАЦИИ ===== */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .app-container {
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Верхняя панель -->
+        <div class="top-bar">
+            <div class="logo-area">
+                <span class="logo-icon">🎨</span>
+                <span class="logo-text">Painter <span>Pro</span></span>
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn" id="clearBtn">🗑️ Очистить</button>
+                <button class="action-btn" id="saveBtn">💾 Сохранить</button>
+            </div>
+        </div>
+
+        <!-- Кнопка открытия меню для планшетов -->
+        <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+
+        <!-- Основной лэйаут -->
+        <div class="main-layout">
+            <!-- Левая панель (инструменты) -->
+            <div class="sidebar-left" id="sidebarLeft">
+                <div class="tools-section">
+                    <div class="section-title">🎨 Инструменты</div>
+                    <div class="tools-grid" id="toolsGrid">
+                        <div class="tool-item" id="brush" data-tool="brush">
+                            <span class="tool-icon">✏️</span>
+                            <span>Кисть</span>
+                        </div>
+                        <div class="tool-item" id="eraser" data-tool="eraser">
+                            <span class="tool-icon">🧽</span>
+                            <span>Ластик</span>
+                        </div>
+                        <div class="tool-item" id="eyedropper" data-tool="eyedropper">
+                            <span class="tool-icon">👁️</span>
+                            <span>Пипетка</span>
+                        </div>
+                        <div class="tool-item" id="fill" data-tool="fill">
+                            <span class="tool-icon">🪣</span>
+                            <span>Заливка</span>
+                        </div>
+                        <div class="tool-item" id="palette" data-tool="palette">
+                            <span class="tool-icon">🎨</span>
+                            <span>Палитра</span>
+                        </div>
+                        <div class="tool-item" id="text" data-tool="text">
+                            <span class="tool-icon">📝</span>
+                            <span>Текст</span>
+                        </div>
+                        <div class="tool-item" id="magnifier" data-tool="magnifier">
+                            <span class="tool-icon">🔍</span>
+                            <span>Лупа</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tools-section">
+                    <div class="section-title">⬜ Фигуры</div>
+                    <div class="tools-grid" id="shapesGrid">
+                        <div class="tool-item" id="rectangle" data-shape="rectangle">
+                            <span class="tool-icon">⬜</span>
+                            <span>Квадрат</span>
+                        </div>
+                        <div class="tool-item" id="circle" data-shape="circle">
+                            <span class="tool-icon">⚪</span>
+                            <span>Круг</span>
+                        </div>
+                        <div class="tool-item" id="line" data-shape="line">
+                            <span class="tool-icon">📏</span>
+                            <span>Линия</span>
+                        </div>
+                        <div class="tool-item" id="arrow" data-shape="arrow">
+                            <span class="tool-icon">➡️</span>
+                            <span>Стрелка</span>
+                        </div>
+                        <div class="tool-item" id="star" data-shape="star">
+                            <span class="tool-icon">⭐</span>
+                            <span>Звезда</span>
+                        </div>
+                        <div class="tool-item" id="spray" data-shape="spray">
+                            <span class="tool-icon">💨</span>
+                            <span>Спрей</span>
+                        </div>
+                        <div class="tool-item" id="gradient" data-shape="gradient">
+                            <span class="tool-icon">🌈</span>
+                            <span>Градиент</span>
+                        </div>
+                        <div class="tool-item" id="stamp" data-shape="stamp">
+                            <span class="tool-icon">🔖</span>
+                            <span>Штамп</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Центральная часть (холст) -->
+            <div class="canvas-wrapper">
+                <div class="canvas-header">
+                    <div class="canvas-title">
+                        <span id="deviceType">💻 Режим: ПК</span>
+                    </div>
+                    <div class="canvas-controls">
+                        <span class="tool-icon">📐 800x500</span>
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="canvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Правая панель (свойства) -->
+            <div class="sidebar-right" id="sidebarRight">
+                <div class="property-group">
+                    <div class="property-label">
+                        <span>🎨 Цвет</span>
+                    </div>
+                    <div class="color-preview">
+                        <input type="color" id="colorPicker" value="#cba6f7">
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <div class="property-label">
+                        <span>🔵 Размер кисти</span>
+                    </div>
+                    <div class="size-control">
+                        <input type="range" id="brushSize" min="1" max="50" value="5">
+                        <div class="size-value" id="sizeDisplay">5px</div>
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <div class="property-label">
+                        <span>ℹ️ Информация</span>
+                    </div>
+                    <div class="info-panel">
+                        <div class="info-row">
+                            <span>Текущий:</span>
+                            <span id="currentTool">Кисть</span>
+                        </div>
+                        <div class="info-row">
+                            <span>Устройство:</span>
+                            <span id="currentDevice">ПК</span>
+                        </div>
+                        <div class="info-row">
+                            <span>Версия:</span>
+                            <span>2.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Нижняя панель -->
+        <div class="bottom-bar">
+            <div class="device-info">
+                <span class="device-indicator"></span>
+                <span id="deviceStatus">ПК · Большой экран</span>
+            </div>
+            <div class="status-message">
+                <span>✨ Готов к работе</span>
+            </div>
+        </div>
+
+        <!-- Мобильное меню -->
+        <div class="mobile-menu">
+            <button class="mobile-menu-btn" id="mobileMenuBtn">⚙️</button>
+        </div>
+    </div>
+
+    <!-- Скрипты -->
+    <script>
+        // ===== ДЕТЕКТОР УСТРОЙСТВ И АДАПТАЦИЯ ИНТЕРФЕЙСА =====
+        function detectDevice() {
+            const width = window.innerWidth;
+            const deviceInfo = {
+                type: 'pc',
+                name: 'ПК',
+                description: 'Большой экран'
+            };
+
+            if (width <= 480) {
+                deviceInfo.type = 'mobile';
+                deviceInfo.name = '📱 Телефон';
+                deviceInfo.description = 'Мобильный режим';
+            } else if (width <= 768) {
+                deviceInfo.type = 'tablet';
+                deviceInfo.name = '📱 Планшет';
+                deviceInfo.description = 'Планшетный режим';
+            } else if (width <= 1024) {
+                deviceInfo.type = 'small-pc';
+                deviceInfo.name = '💻 Ноутбук';
+                deviceInfo.description = 'Средний экран';
+            }
+
+            return deviceInfo;
+        }
+
+        function updateUIForDevice() {
+            const device = detectDevice();
+            
+            document.getElementById('deviceType').innerHTML = device.name + ' · ' + device.description;
+            document.getElementById('deviceStatus').innerHTML = device.name + ' · ' + device.description;
+            document.getElementById('currentDevice').innerHTML = device.name;
+
+            if (device.type === 'mobile') {
+                document.getElementById('sidebarLeft').classList.remove('active');
+                document.getElementById('sidebarRight').classList.remove('active');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarLeft = document.getElementById('sidebarLeft');
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const sidebarRight = document.getElementById('sidebarRight');
+            
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebarLeft.classList.toggle('active');
+                });
+            }
+
+            if (mobileMenuBtn) {
+                mobileMenuBtn.addEventListener('click', function() {
+                    sidebarRight.classList.toggle('active');
+                });
+            }
+
+            updateUIForDevice();
+
+            window.addEventListener('resize', function() {
+                updateUIForDevice();
+            });
+
+            const brushSize = document.getElementById('brushSize');
+            const sizeDisplay = document.getElementById('sizeDisplay');
+            
+            if (brushSize && sizeDisplay) {
+                brushSize.addEventListener('input', function() {
+                    sizeDisplay.textContent = this.value + 'px';
+                });
+            }
+        });
+    </script>
+
+    <!-- Основные скрипты (ваши 4 файла) -->
+    <script src="canvas-core.js"></script>
+    <script src="tools.js"></script>
+    <script src="ui-controller.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
